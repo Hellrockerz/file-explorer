@@ -38,6 +38,7 @@ const FilePreviewPopup = ({ open, onClose, file }) => {
           width={500}
           height={300}
           layout="responsive"
+          unoptimized
           priority={true} // Optional: Helps with LCP optimization
         />
       );

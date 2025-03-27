@@ -10,8 +10,8 @@ const nextConfig = {
             },
             {
                 protocol: "https",
-                hostname: "myapi.com",
-                pathname: "/uploads/**",
+                hostname: "'file-explorer-backend-production.up.railway.app'",
+                pathname: "/images/**",
             },
         ],
     },
