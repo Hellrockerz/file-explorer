@@ -34,6 +34,8 @@ import request from "@/app/api/axiosInstanceFIle";
 import "react-toastify/dist/ReactToastify.css";
 import { IMAGE_URL } from "../../Utils/appConstants.js";
 
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+
 const getFileIcon = (type) => {
   switch (type) {
     case "pdf":
@@ -77,6 +79,35 @@ const FileTree = () => {
       setFiles(response.data.data || []);
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to fetch files");
+    }
+  };
+
+  const findItem = (items, id) => {
+    for (const item of items) {
+      if (item._id === id) return item;
+      if (item.children) {
+        const found = findItem(item.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const onDragEnd = async (result) => {
+    if (!result.destination) return;
+
+    const { draggableId, destination } = result;
+    const draggedItem = findItem(files, draggableId);
+    const destinationFolder = findItem(files, destination.droppableId);
+
+    if (!draggedItem || !destinationFolder || draggedItem.isRoot) return;
+
+    try {
+      await request.put(`/file/updateFolder/${draggedItem._id}`, { parentId: destinationFolder._id });
+      fetchFiles();
+      toast.success("Folder/File moved successfully");
+    } catch (error) {
+      toast.error("Failed to move folder/file");
     }
   };
 
@@ -146,64 +177,96 @@ const FileTree = () => {
 
   const renderTree = (items, level = 0) => {
     return (
-      <List component="div" disablePadding>
-        {items.map((item) => (
-          <div key={item._id}>
-            <ListItem
-              sx={{ pl: level * 2, cursor: "pointer" }}
-              onClick={() => {
-                if (!item.isFile) {
-                  toggleFolder(item._id);
-                } else {
-                  handleFileClick(item);
-                }
-              }}
-            >
-              {item.isFile === false && (
-                <IconButton
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFolder(item._id);
-                  }}
-                >
-                  {openFolders[item._id] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                </IconButton>
-              )}
-              <ListItemIcon>{item.isFile ? getFileIcon(item.fileExtension) : <FolderIcon />}</ListItemIcon>
-              <ListItemText primary={item.fileName} />
-              {item.isFile && (
-                <IconButton
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFavorite(item._id);
-                  }}
-                >
-                  {item.isFavorite ? <StarIcon color="warning" /> : <StarBorderIcon />}
-                </IconButton>
-              )}
-              <IconButton
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleMenuOpen(e, item);
-                }}
-              >
-                <MoreVertIcon />
-              </IconButton>
-            </ListItem>
-            {item.children && item.children.length > 0 && (
-              <Collapse in={openFolders[item._id]} timeout="auto" unmountOnExit>
-                {renderTree(item.children, level + 1)}
-              </Collapse>
-            )}
-          </div>
-        ))}
-      </List>
+      <Droppable droppableId="root" type="folder">
+        {(provided) => (
+          <List
+            component="div"
+            disablePadding
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+          >
+            {items.map((item, index) => (
+              <Draggable key={item._id} draggableId={item._id} index={index}>
+                {(provided) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                  >
+                    <div {...provided.dragHandleProps}>
+                      <div key={item._id}>
+                        <ListItem
+                          sx={{ pl: level * 2, cursor: "pointer" }}
+                          onClick={() => {
+                            if (!item.isFile) {
+                              toggleFolder(item._id);
+                            } else {
+                              handleFileClick(item);
+                            }
+                          }}
+                        >
+                          {item.isFile === false && (
+                            <IconButton
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleFolder(item._id);
+                              }}
+                            >
+                              {openFolders[item._id] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                            </IconButton>
+                          )}
+                          <ListItemIcon>{item.isFile ? getFileIcon(item.fileExtension) : <FolderIcon />}</ListItemIcon>
+                          <ListItemText primary={item.fileName} />
+                          {item.isFile && (
+                            <IconButton
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleFavorite(item._id);
+                              }}
+                            >
+                              {item.isFavorite ? <StarIcon color="warning" /> : <StarBorderIcon />}
+                            </IconButton>
+                          )}
+                          <IconButton
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMenuOpen(e, item);
+                            }}
+                          >
+                            <MoreVertIcon />
+                          </IconButton>
+                        </ListItem>
+                        {item.children && item.children.length > 0 && (
+                          <Collapse in={openFolders[item._id]} timeout="auto" unmountOnExit>
+                            {renderTree(item.children, level + 1)}
+                          </Collapse>
+                        )}
+                      </div>
+                    </div>
+                    {item.isFile === false && (
+                      <Droppable droppableId={item._id} type="folder">
+                        {(provided) => (
+                          <div ref={provided.innerRef} {...provided.droppableProps}>
+                            {provided.placeholder}
+                          </div>
+                        )}
+                      </Droppable>
+                    )}
+                  </div>
+                )}
+              </Draggable>
+            ))}
+            {provided.placeholder}
+          </List>
+        )}
+      </Droppable>
     );
   };
 
   return (
     <>
-      {renderTree(files)}
+      <DragDropContext onDragEnd={onDragEnd}>
+        {renderTree(files)}
+      </DragDropContext>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
         {selectedItem?.isFile === false && (
           <MenuItem onClick={() => openDialog("addFolder")}>
@@ -227,7 +290,6 @@ const FileTree = () => {
       <UploadFileDialog open={dialogType === "uploadFile"} onClose={closeDialog} parentId={selectedParentId} refreshFiles={fetchFiles} />
       <DeleteConfirmationDialog open={dialogType === "delete"} onClose={closeDialog} selectedItem={selectedItem} refreshFiles={fetchFiles} />
       <RenameDialog open={renameDialogOpen} onClose={() => setRenameDialogOpen(false)} selectedItem={selectedItem} refreshFiles={fetchFiles} />
-      {/* File Preview Popup */}
       <FilePreviewPopup open={!!previewFile} onClose={closePreview} file={previewFile} />
     </>
   );
