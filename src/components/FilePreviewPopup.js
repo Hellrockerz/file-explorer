@@ -22,7 +22,7 @@ const FilePreviewPopup = ({ open, onClose, file }) => {
     else if (file.fileExtension === "docx" || file.fileExtension === "doc") {
       return (
         <iframe
-          src={`${IMAGE_URL}/${file.location}`}
+          src={`https://docs.google.com/gview?url=${IMAGE_URL}/${file.location}&embedded=true`}
           title="Word File Preview"
           width="100%"
           height="500px"
