@@ -1,7 +1,7 @@
 //*************************LIVE VERCEL****************************/
 
-const BASE_URL = 'https://file-explorer-backend.vercel.app/api'
-const IMAGE_URL = 'https://file-explorer-backend.vercel.app/images'
+const BASE_URL = 'https://file-explorer-backend-production.up.railway.app/api'
+const IMAGE_URL = 'https://file-explorer-backend-production.up.railway.app/images'
 
 //*************************LOCAL****************************/
 
