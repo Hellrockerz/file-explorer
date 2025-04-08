@@ -41,7 +41,7 @@ const FilePreviewPopup = ({ open, onClose, file, handleUpload }) => {
     onClose();
   };
 
-  const getFileViewer = () => {
+  const getFileViewer = () => { 
     if (file.fileExtension === "pdf") {
       return (
         <>
