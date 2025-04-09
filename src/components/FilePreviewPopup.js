@@ -14,15 +14,15 @@ const FilePreviewPopup = ({ open, onClose, file, handleUpload }) => {
     try {
       const existingPdfBytes = await fetch(`${IMAGE_URL}/${file.location}`).then((res) => res.arrayBuffer());
       const pdfDoc = await PDFDocument.load(existingPdfBytes);
-      const pages = pdfDoc.getPages();
-      const firstPage = pages[0];
+      // const pages = pdfDoc.getPages();
+      // const firstPage = pages[0];
 
-      firstPage.drawText("Edited with pdf-lib!", {
-        x: 50,
-        y: firstPage.getHeight() - 50,
-        size: 30,
-        color: rgb(1, 0, 0),
-      });
+      // firstPage.drawText("Edited with pdf-lib!", {
+      //   x: 50,
+      //   y: firstPage.getHeight() - 50,
+      //   size: 30,
+      //   color: rgb(1, 0, 0),
+      // });
 
       const updatedPdfBytes = await pdfDoc.save();
       setPdfBytes(updatedPdfBytes);
